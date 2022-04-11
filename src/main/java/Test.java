@@ -5,6 +5,8 @@ import org.jnativehook.keyboard.NativeKeyListener;
 import org.sikuli.basics.Settings;
 import org.sikuli.script.*;
 
+import javax.swing.*;
+import java.awt.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -20,81 +22,91 @@ public class Test implements NativeKeyListener {
     private Screen s;
     private String basePath;
     private boolean running;
-    ArrayList<Match> imagesFound;
+    private boolean aiming;
+    ArrayList<Match> targetsFound;
+    private int targetIndex=0;
+    private MyWindow window;
+    String[] targets = {"Vladimir.png", "Cassiopeia.png", "MissFortune.png", "Nocturne.png", "Jhin.png", "boneco.png"};
+    JLabel label1;
+    JLabel infoLabel;
+    public Test(MyWindow myWindow)
+    {
+        this.window = myWindow;
+    }
     private void start() {
         try{
-
+           label1 = (JLabel) window.getComponent(window.mainPanel, "label1");
+            infoLabel = (JLabel) window.getComponent(window.mainPanel, "infoLabel");
+            //Mouse.init();
             s = new Screen();
-            imagesFound = new ArrayList<>();
+
+            targetsFound = new ArrayList<>();
             URL resourceFolderURL = this.getClass().getClassLoader().getResource("Imagens");
             basePath = resourceFolderURL.toURI().getPath() + "/";
-            String[] lifeBars = {"lifeBar1.png", "lifeBar2.png", "lifeBar3.png","lifeBar4.png",
-                    "lifeBar5.png", "lifeBar6.png","lifeBar7.png","lifeBar8.png","lifeBar9.png",
-                    "lifeBar10.png","lifeBar11.png","lifeBar12.png","lifeBar13.png", "lifeBar14.png",
-                    "lifeBar15.png","lifeBar16.png"};
-            Region region1 = new Region(416, 231,850,210);
+            //targets = {"Vladimir.png"};
             Settings.MoveMouseDelay = 0f;
             Settings.MinSimilarity = 0.5;
+            Settings.WaitScanRate = 200;
             Pattern pattern = new Pattern();
             running = false;
             while(true)
             {
                 long begin = System.currentTimeMillis();
-              //  System.out.println("Running While =" + running);
+               //System.out.println("Running While =" + running);
 
                 if (running)
                 {
-                      for (int i = 0; i < lifeBars.length; i++)
-                      {
-                        //System.out.println("Running");
-                        if(findAllMatches(lifeBars[i], imagesFound))
-                        {
-                            break;
+                    //System.out.println("Running If =" + running);
+                    if(aiming) {
+                        Match targetMatch = findMatch(targets[targetIndex]);
+                        if (targetMatch != null) {
+                            Location location = targetMatch.getCenter();
+                            location.y += 120;
+                            s.mouseMove(location);
+                            long end = System.currentTimeMillis();
+                            float elapsedTime = (end - begin) / 1000.0f;
+                            System.out.println("Elapsed Time: "+elapsedTime +" seconds");
                         }
-                      }
-                      System.out.println("imagesFound size: " +imagesFound.size());
-                      for(int k=0; k<imagesFound.size(); k++)
-                      {
-                          s.mouseMove(imagesFound.get(k));
-                          s.mouseMove(-60, 60);
-                          sleep(200);
-                      }
-                      imagesFound.clear();
-                      long end = System.currentTimeMillis();
-                      float elapsedTime = (end - begin) / 1000.0f;
-                    System.out.println("Elapsed Time: "+elapsedTime +" seconds");
+                    }
+
                 }
                 sleep(1);
             }
 
         }
-        catch(FindFailed | URISyntaxException | InterruptedException e){ //
+        catch(FindFailed | URISyntaxException | InterruptedException e){ //  e
             e.printStackTrace();
         }
     }
+private Match findMatch(String path)
+{
+    try {
+        Region region = new Region(0, 0, 800, 600);
+        Match match = region.find(basePath+ path);
+        if( match.getScore() >= 0.7) {
+            infoLabel.setText("IMAGEM ENCONTRADA: "+ path);
+        return match;
+        }
 
-    private boolean findAllMatches(String path, ArrayList<Match> found) {
-        try {
+    }catch(FindFailed e){System.out.println("IMAGEM NAO ENCONTRADA: "+ path+": "+ e.getMessage());}
+    System.out.println("IMAGEM NAO ENCONTRADA: "+ path);
+    infoLabel.setText("IMAGEM NAO ENCONTRADA: "+ path);
+    return null;
+}
 
-         Iterator<Match> matches =   s.findAll(basePath + path);
 
+    private void findAllMatches(String path, ArrayList<Match> found) {
+        try
+        {
+            Region region = new Region(170,0,1180, 685);
+            Iterator<Match> matches =   region.findAll(basePath + path);
             while (matches.hasNext()) {
-
                 Match match = matches.next();
-                //System.out.println("Math score: " +match.getScore());
                 if( match.getScore() >= 0.7) {
-                  //  System.out.println("Math with high score: " + match.getScore() + " --> " + match.toString());
-                if(!matchesContains(found, match))
-                {
-                    //    System.out.println("oneAdded");
                         found.add(match);
-                        if(found.size()>=5) return true;
-
-                }
                 }
             }
         }catch (FindFailed e){e.printStackTrace();}
-        return false;
     }
 
     private boolean matchesContains(ArrayList<Match> matches, Match otherMatch)
@@ -146,26 +158,21 @@ public class Test implements NativeKeyListener {
             System.err.println(ex.getMessage());
             System.exit(1);
         }
-        //Just put this into your main:
-        try {
-            GlobalScreen.registerNativeHook();
-        }
-        catch (NativeHookException ex) {
-            System.err.println("There was a problem registering the native hook.");
-            System.err.println(ex.getMessage());
-            System.exit(1);
-        }
-
-        Test test = new Test();
+        MyWindow mywindow = new MyWindow();
+        mywindow.setVisible(true);
+        //
+        Test test = new Test(mywindow);
         GlobalScreen.addNativeKeyListener(test);
         test.start();
+
+        //
 
     }
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
        // System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()));
-        if(e.getKeyCode() == 42)
+        if(e.getKeyCode() == NativeKeyEvent.VC_PAGE_UP)
         {
             if(!running)
             {
@@ -177,15 +184,27 @@ public class Test implements NativeKeyListener {
                 System.out.println("running = false");
                 running = false;
             }
-
-
         }
-
+        if(e.getKeyCode() == NativeKeyEvent.VC_CAPS_LOCK)
+        {
+            System.out.println("aiming!");
+            aiming = true;
+        }
+        if(e.getKeyCode() == NativeKeyEvent.VC_BACKQUOTE)
+        {
+            targetIndex++;
+            if(targetIndex>targets.length-1) targetIndex=0;
+        }
+        label1.setText("Index: " + targets[targetIndex]);
     }
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
         System.out.println("Key Released: " + NativeKeyEvent.getKeyText(e.getKeyCode()));
+        if(e.getKeyCode() == NativeKeyEvent.VC_CAPS_LOCK)
+        {
+            aiming = false;
+        }
     }
 
     @Override
