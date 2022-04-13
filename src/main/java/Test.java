@@ -26,7 +26,7 @@ public class Test implements NativeKeyListener {
     ArrayList<Match> targetsFound;
     private int targetIndex=0;
     private MyWindow window;
-    String[] targets = {"Vladimir.png", "Cassiopeia.png", "MissFortune.png", "Nocturne.png", "Jhin.png", "boneco.png"};
+    String[] targets = {"Vladimir.png", "Cassiopeia.png", "MissFortune.png", "Nocturne.png", "Jhin.png", "Malphite.png", "Ziggs.png"};
     JLabel label1;
     JLabel infoLabel;
     public Test(MyWindow myWindow)
@@ -43,15 +43,13 @@ public class Test implements NativeKeyListener {
             targetsFound = new ArrayList<>();
             URL resourceFolderURL = this.getClass().getClassLoader().getResource("Imagens");
             basePath = resourceFolderURL.toURI().getPath() + "/";
-            //targets = {"Vladimir.png"};
             Settings.MoveMouseDelay = 0f;
             Settings.MinSimilarity = 0.5;
-            Settings.WaitScanRate = 200;
-            Pattern pattern = new Pattern();
+            Settings.WaitScanRate = 6;
             running = false;
             while(true)
             {
-                long begin = System.currentTimeMillis();
+               long begin = System.currentTimeMillis();
                //System.out.println("Running While =" + running);
 
                 if (running)
@@ -59,6 +57,7 @@ public class Test implements NativeKeyListener {
                     //System.out.println("Running If =" + running);
                     if(aiming) {
                         Match targetMatch = findMatch(targets[targetIndex]);
+                        //Match targetMatch = s.findText("Boneco-alvo");
                         if (targetMatch != null) {
                             Location location = targetMatch.getCenter();
                             location.y += 120;
@@ -82,7 +81,7 @@ private Match findMatch(String path)
 {
     try {
         Region region = new Region(0, 0, 800, 600);
-        Match match = region.find(basePath+ path);
+        Match match = s.find(basePath+ path);
         if( match.getScore() >= 0.7) {
             infoLabel.setText("IMAGEM ENCONTRADA: "+ path);
         return match;
